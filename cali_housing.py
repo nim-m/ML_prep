@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -37,6 +38,9 @@ y_pred = model.predict(X_test)
 # print("\nAccuracy:", accuracy)
 mae = mean_absolute_error(y_test, y_pred)
 print("Mean absolute error:", mae, "\n")
+
+r2_value = r2_score(y_test, y_pred)
+print("R-squared:", r2_value)
 
 # print actual comparison
 print("y_test:\n", y_test)
