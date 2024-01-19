@@ -22,11 +22,10 @@ print(df.columns)
 y = ch_data.target
 
 # select feature to be used
-X = df['MedInc']
-X_reshape = np.reshape(X,(-1,1))
+X = df[['MedInc']]
 
 # split train and test data
-X_train, X_test, y_train, y_test = train_test_split(X_reshape, y, test_size=0.2, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # create a model, fit, and predict
 model = LinearRegression()
