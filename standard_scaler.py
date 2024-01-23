@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -16,7 +17,6 @@ def main(X,y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
     data = load_breast_cancer()
-    data.head()
 
     # Data standardisation
     scaler = StandardScaler()
@@ -36,8 +36,6 @@ def main(X,y):
     print("y_test:\n", y_test)
     print("y_pred:\n", y_pred)
 
-    plt.plot(X_test, y_pred, color="blue", linewidth=3)
-    plt.show()
 
 if __name__ == "__main__":
     X, y = load()
