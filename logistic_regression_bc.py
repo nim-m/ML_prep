@@ -32,11 +32,13 @@ def evaluate_classification(y_true, y_pred):
     precision = precision_score(y_true, y_pred)
     cnf_matrix = confusion_matrix(y_true, y_pred)
 
+    # SPECIFICITY (True Negative Rate)
+    specificity = confusion_matrix(y, y_pred)[0, 0] / (confusion_matrix(y, y_pred)[0, 0] + confusion_matrix(y, y_pred)[0, 1])
+    print("Specificity: {:.6f}".format(specificity))
     print("Accuracy: {:.6f}".format(accuracy))
     print("AUC: {:.6f}".format(auc))
     print("Sensitivity: {:.6f}".format(sensitivity))
     print("Precision: {:.6f}".format(precision))
-    print()
 
     # Plot confusion matrix using seaborn
     plt.figure(figsize=(8, 6))
