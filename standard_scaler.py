@@ -16,7 +16,15 @@ def main(X,y):
     # split train and test data
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
+    # load data into data frame for summary and visualisation
     data = load_breast_cancer()
+    df = pd.DataFrame(data.data, columns=data.feature_names)
+    df['target'] = data.target
+
+    # histograms of the variables
+    df.hist(figsize=(10, 10))
+    plt.tight_layout()
+    plt.show()
 
     # Data standardisation
     scaler = StandardScaler()
