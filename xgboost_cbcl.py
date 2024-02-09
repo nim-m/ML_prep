@@ -29,11 +29,6 @@ def create_model(eval_metrics):
     return XGBRegressor(n_estimators=100, learning_rate=0.1, eval_metric=eval_metrics)
 
 
-def cross_validation(model, X, y):
-    # perform cross validation
-    print(results)
-
-
 def main():
     X, y = load_data()
 
