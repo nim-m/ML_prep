@@ -1,22 +1,20 @@
 from xgboost import XGBRegressor
 import pandas as pd
-from sklearn.model_selection import train_test_split, cross_val_score
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def load_data():
     df = pd.read_csv('cbcl_1_5-2023-07-21.csv')
 
     # data cleaning -------------
-
-    df['cbcl_validity_flag'] = df['cbcl_validity_flag'].fillna(0)
     df = df[(df['cbcl_validity_flag'] != 1)]
 
     # drop rows where dsm5_autism_spectrum_problems_t_score = NaN
     df = df.dropna(subset=['dsm5_autism_spectrum_problems_t_score'])
 
-    # Drop rows where any cell in the subset contains NaN
-    subset_columns = df.iloc[:, 11:110]
-    df = df.dropna(subset=subset_columns.columns)
+    # (REMOVED) Drop rows where any cell in the subset contains NaN
+    # Instead let xgb deal with missing values (is this okay?)
 
     # define X and y -------------
     X = df.iloc[:, 11:110].copy()
@@ -26,27 +24,44 @@ def load_data():
 
 
 def create_model(eval_metrics):
-    return XGBRegressor(n_estimators=100, learning_rate=0.1, eval_metric=eval_metrics)
+    return XGBRegressor(n_estimators=100, learning_rate=0.1, eval_metric=eval_metrics, early_stopping_rounds=5)
 
 
 def main():
     X, y = load_data()
 
-    # Split the data into training and test sets. Further split the training set into training and validation sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+    # Perform cross validation (manually, using a for loop, for finer control)
+    # place the entire block of dividing datasets, model fitting, and testing within loop
 
-    eval_set = [(X_train, y_train), (X_val, y_val)]
+    k = 10
+
     eval_metrics = ["rmse", "mae"]
+    results = []
 
-    model = create_model(eval_metrics)
-    model.fit(X_train, y_train, eval_set=eval_set, verbose=True, early_stopping_rounds=2)
+    # Loop over each fold
+    for i in range(k):
+        # Split data into training and test sets for current fold
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=i)
 
-    # Perform cross validation
-    cv_results = cross_val_score(model, X_train, y_train, cv=10, scoring="r2")
+        eval_set = [(X_train, y_train), (X_val, y_val)]
 
-    print("\nCross Validation:")
-    print(cv_results)
+        # Create and fit model for current fold
+        model = create_model(eval_metrics)
+        model.fit(X_train, y_train, eval_set=eval_set, verbose=True)
+
+        # Evaluate model on test set for current fold
+        score = model.score(X_test, y_test)
+        results.append(score)
+    
+    # Calculate average score and standard deviation
+    avg_score = np.mean(results)
+    std_dev = np.std(results)
+
+    print("\n R2 scores: \n")
+
+    print(f"Average score: {avg_score}")
+    print(f"Standard deviation: {std_dev}")
 
 
 if __name__ == "__main__":
