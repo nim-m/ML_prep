@@ -1,9 +1,13 @@
-**Comparison of Classifiers**
-
-| Model               | K-Fold CV Accuracy | Accuracy | AUC      | Sensitivity | Specificity | Precision |
-|---------------------|--------------------|----------|----------|-------------|-------------|-----------|
-| Logistic Regression | 0.967805 (0.022210)| 0.971880 | 0.964180 | 0.994398    | 0.933962    | 0.962060  |
-| Decision Tree       | 0.923914 (0.036273)| 0.917399 | 0.914057 | 0.927171    | 0.900943    | 0.940341  |
-| Random Forest       | 0.958417 (0.027773)| 0.964851 | 0.960494 | 0.977591    | 0.943396    | 0.966759  |
-| SVM                 | 0.976013 (0.017235)| 0.977153 | 0.973171 | 0.988796    | 0.957547    | 0.975138  |
-| XGBoost             | 0.966635 (0.024098)| 0.970123 | 0.967569 | 0.977591    | 0.957547    | 0.974860  |
+| Model NAME | Model TYPE | Dataset | Input parameters | Performance (AUC) | Notes |
+|---|---|---|---|---|---|
+| xgbc1.py | XGBClassifier | n=27088 | 129 reference features | Avg: 0.8497 | regress_lang_time cat. |
+| | | | | SD: 0.0052 | paras need to be converted into a single numerical para, then standardised |
+| | XGB based standardisation | ref129_latest.csv (input) | SCQ, RBSR, DCDQ |  | XGB based imputation |
+| xgbc2_1.py | | | SCQ only |  |  |
+| xgbc2_2.py | | | SCQ selected parameters |  |  |
+| xgbc3.py | | n=2637 | CBCL only | Average: 0.9033 | intersection of deriv_cog_impair and cbcl. train model on this data. predict entries for which cbcl is available, but deriv_cog_impair not available (only 3 such entries) |
+| | | | | SD: 0.0139 |  |
+| | | 164 cbcl parameters | 394 (after encoding) |  |  |
+| xgbc3_1.py | | | CBCL selected parameters |  |  |
+| SVC |  | imputation: |  |  |  |
+| Random Forest |  | imputation: |  |  |  |
