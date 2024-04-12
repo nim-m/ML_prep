@@ -1,35 +1,40 @@
-# DUPLICATE (OVERSAMPLING AFTER SPLITTING)
-
-from imblearn.over_sampling import RandomOverSampler
-import shap
-
-from xgboost import XGBClassifier
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
-
 import matplotlib.pyplot as plt
-import seaborn as sns
+
+from xgboost import XGBClassifier
+
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve, classification_report
+from sklearn.preprocessing import MinMaxScaler
+
+import shap
+from imblearn.over_sampling import RandomOverSampler
 
 
 def load_data():
-    df2 = pd.read_csv('ref129_latest.csv')
+    df2 = pd.read_csv('cbcl_cog_imp.csv')
 
     # TOTAL PREDICTION DATASET
-    X2 = df2.drop(columns=['subject_sp_id','asd','deriv_cog_impair']) 
+    X2 = df2.drop(columns=['subject_sp_id','deriv_cog_impair','cbcl_validity_flag']) 
     y2 = df2['deriv_cog_impair']
 
     # MODEL TRAINING DATASET 
     # drop rows where target variable deriv_cog_impair is missing
     df = df2.dropna(subset=['deriv_cog_impair'])
 
+    # Drop rows where 'cbcl_validity_flag' column is 1.0 ----------
+    df = df[df['cbcl_validity_flag'] != 1.0]
+    
+    # Drop rows where 'deriv_cog_impair' column is NaN ------------
+    df = df.dropna(subset=['deriv_cog_impair'])
+
     # Separate features and target variable
-    X = df.drop(columns=['subject_sp_id','asd','deriv_cog_impair']) 
+    X = df.drop(columns=['subject_sp_id','deriv_cog_impair','cbcl_validity_flag']) 
     y = df['deriv_cog_impair']
 
     # Apply random oversampling to balance the classes
-    oversampler = RandomOverSampler(random_state=42)
+    # oversampler = RandomOverSampler(random_state=42)
     # X_resampled, y_resampled = oversampler.fit_resample(X, y)
     
     # return X_resampled, y_resampled, df, df2, y2, X2
@@ -40,12 +45,17 @@ def create_model(eval_metrics):
     return XGBClassifier(n_estimators=100, learning_rate=0.1, eval_metric=eval_metrics, early_stopping_rounds=5)
 
 
+def calculate_metrics(y_true, y_pred):
+    
+    auc_score = roc_auc_score(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred)
+    
+    return auc_score, cm, report
+
 def main():
     X, y, df, df2, y2, X2 = load_data()
 
-    # Perform cross validation (manually, using a for loop, for finer control)
-    # place the entire block of dividing datasets, model fitting, and testing within loop
-
+    # Perform cross validation using StratifiedKFold
     k = 10
 
     eval_metrics = ["auc"]
@@ -64,19 +74,86 @@ def main():
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=i)
         X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=i)
 
-        eval_set = [(X_train, y_train), (X_val, y_val)]
+        # Initialize MinMaxScaler ---------------
+        scaler = MinMaxScaler()
+
+        # Scale the relevant features
+        columns_to_scale = [
+            "emotionally_reactive_raw_score",
+            "emotionally_reactive_t_score",
+            "emotionally_reactive_percentile",
+            "anxious_depressed_raw_score",
+            "anxious_depressed_t_score",
+            "anxious_depressed_percentile",
+            "somatic_complaints_raw_score",
+            "somatic_complaints_t_score",
+            "somatic_complaints_percentile",
+            "withdrawn_raw_score",
+            "withdrawn_t_score",
+            "withdrawn_percentile",
+            "sleep_problems_raw_score",
+            "sleep_problems_t_score",
+            "sleep_problems_percentile",
+            "attention_problems_raw_score",
+            "attention_problems_t_score",
+            "attention_problems_percentile",
+            "aggressive_behavior_raw_score",
+            "aggressive_behavior_t_score",
+            "aggressive_behavior_percentile",
+            "internalizing_problems_raw_score",
+            "internalizing_problems_t_score",
+            "internalizing_problems_percentile",
+            "externalizing_problems_raw_score",
+            "externalizing_problems_t_score",
+            "externalizing_problems_percentile",
+            "total_problems_raw_score",
+            "total_problems_t_score",
+            "total_problems_percentile",
+            "stress_problems_raw_score",
+            "stress_problems_t_score",
+            "stress_problems_percentile",
+            "other_problems_raw_score",
+            "dsm5_depressive_problems_raw_score",
+            "dsm5_depressive_problems_t_score",
+            "dsm5_depressive_problems_percentile",
+            "dsm5_anxiety_problems_raw_score",
+            "dsm5_anxiety_problems_t_score",
+            "dsm5_anxiety_problems_percentile",
+            "dsm5_autism_spectrum_problems_raw_score",
+            "dsm5_autism_spectrum_problems_t_score",
+            "dsm5_autism_spectrum_problems_percentile",
+            "dsm5_attention_deficit_hyperactivity_raw_score",
+            "dsm5_attention_deficit_hyperactivity_t_score",
+            "dsm5_attention_deficit_hyperactivity_percentile",
+            "dsm5_oppositional_defiant_raw_score",
+            "dsm5_oppositional_defiant_t_score",
+            "dsm5_oppositional_defiant_percentile"
+        ]
+        
+        X_train_scaled = X_train.copy()
+        X_train_scaled[columns_to_scale] = scaler.fit_transform(X_train_scaled[columns_to_scale])
+        X_val_scaled = X_val.copy()
+        X_val_scaled[columns_to_scale] = scaler.transform(X_val_scaled[columns_to_scale])
+        X_test_scaled = X_test.copy()
+        X_test_scaled[columns_to_scale] = scaler.transform(X_test_scaled[columns_to_scale])
+
+        #oversampler = RandomOverSampler(random_state=42)
+        #X_train_scaled, y_train = oversampler.fit_resample(X_train_scaled, y_train)
+        
+        # ---------------
+        eval_set = [(X_train_scaled, y_train), (X_val_scaled, y_val)]
 
         # scale_pos_weight = len(y_train[y_train == 0]) / len(y_train[y_train == 1])
 
         # Create and fit model for current fold
         model = create_model(eval_metrics)
-        model.fit(X_train, y_train, eval_set=eval_set, verbose=True)
+        model.fit(X_train_scaled, y_train, eval_set=eval_set, verbose=True)
 
         # Predict probabilities on test set for current fold --------------
-        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
         
         # Predict on test set for current fold
-        y_pred = model.predict(X_test)
+        y_pred = model.predict(X_test_scaled)
     
         # Calculate metrics for current fold
         auc_score = roc_auc_score(y_test, y_pred_proba)
@@ -101,7 +178,7 @@ def main():
         # Plot ROC curve for current fold
         fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
         plt.plot(fpr, tpr, label=f'Fold {i+1}')
-    
+
     # Calculate average AUC score and standard deviation --------------    
     avg_auc_score = np.mean(auc_list)
     std_dev = np.std(auc_list)
@@ -154,13 +231,13 @@ def main():
     
     # -------------- Explain model predictions using SHAP ---------------
     explainer = shap.Explainer(model)
-    shap_values = explainer.shap_values(X_test)
+    shap_values = explainer.shap_values(X_test_scaled)
     
     # Plot SHAP values
-    shap.summary_plot(shap_values, X_test, max_display=50)
+    shap.summary_plot(shap_values, X_test_scaled, max_display=50)
 
     # Retrieve the feature names and SHAP values
-    feature_names = X_test.columns
+    feature_names = X_test_scaled.columns
     shap_values_abs = np.abs(shap_values).mean(axis=0)  # Take the mean absolute SHAP values across samples
     
     # Combine feature names and SHAP values into a dictionary
@@ -172,15 +249,13 @@ def main():
     # Retrieve the sorted feature names
     sorted_feature_names = list(sorted_feature_shap.keys())
     print(sorted_feature_names)
-
     
-    # Store predictions in a new column in the original dataframe
+
+    # ---------------- Store predictions in a new column in the original dataframe ----------
     df2.loc[X2.index, 'ml_pred_cog_impair'] = model.predict(X2)
 
     # Save dataframe with new column to csv file
-    df2.to_csv('ml_pred_scale_pos.csv', index=False)
-
-    
+    df2.to_csv('cbcl_cog_imp_ML_pred_minmax.csv', index=False)
 
 
 if __name__ == "__main__":
