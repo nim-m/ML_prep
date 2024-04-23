@@ -12,11 +12,11 @@ library(pROC)
 
 df <- read.csv("ref129_less18_fsiq_1554.csv")
 
-dropped_paras = c('subject_sp_id','derived_cog_impair','asd', 'fsiq', 'fsiq_score', 'fsiq_80')
+dropped_paras = c('subject_sp_id','derived_cog_impair','asd', 'fsiq', 'fsiq_score', 'fsiq_70')
 df <- df[, !(names(df) %in% dropped_paras)]
 
-df$fsiq_70 <- as.logical(df$fsiq_70)
-df$fsiq_70 <- as.numeric(df$fsiq_70)
+df$fsiq_80 <- as.logical(df$fsiq_80)
+df$fsiq_80 <- as.numeric(df$fsiq_80)
 
 parameters <- c(
   "q02_catch_ball_1.0", "q02_catch_ball_2.0", "q02_catch_ball_3.0", "q02_catch_ball_4.0", "q02_catch_ball_5.0",
@@ -63,11 +63,11 @@ print("Data loading and type conversion done.")
 set.seed(123)
 
 # Create a vector of indices for stratified sampling
-train_index <- createDataPartition(df$fsiq_70, p = 0.6, list = FALSE, times = 1)
+train_index <- createDataPartition(df$fsiq_80, p = 0.6, list = FALSE, times = 1)
 remaining_data <- df[-train_index, ]
 
 # Now create test and validation sets from the remaining data
-test_index <- createDataPartition(remaining_data$fsiq_70, p = 0.5, list = FALSE, times = 1)
+test_index <- createDataPartition(remaining_data$fsiq_80, p = 0.5, list = FALSE, times = 1)
 valid_index <- setdiff(seq(nrow(remaining_data)), test_index)
 
 # Split the dataset
@@ -104,22 +104,22 @@ print("Minmax scaling done.")
 # Data Splitting
 
 # For train set
-X_train <- train_data[, !(names(train_data) %in% "fsiq_70")]
-y_train <- train_data$fsiq_70
-y_train_num <- train_data$fsiq_70
+X_train <- train_data[, !(names(train_data) %in% "fsiq_80")]
+y_train <- train_data$fsiq_80
+y_train_num <- train_data$fsiq_80
 y_train <- factor(y_train)  # factorise
 
 # For validation set
-X_val <- valid_data[, !(names(valid_data) %in% "fsiq_70")]
-y_val <- valid_data$fsiq_70
-y_val_num <- valid_data$fsiq_70
+X_val <- valid_data[, !(names(valid_data) %in% "fsiq_80")]
+y_val <- valid_data$fsiq_80
+y_val_num <- valid_data$fsiq_80
 y_val <- factor(y_val)  # factorise
 
 
 # For test set
-X_test <- test_data[, !(names(test_data) %in% "fsiq_70")]
-y_test <- test_data$fsiq_70
-y_test_num <- test_data$fsiq_70
+X_test <- test_data[, !(names(test_data) %in% "fsiq_80")]
+y_test <- test_data$fsiq_80
+y_test_num <- test_data$fsiq_80
 y_test <- factor(y_test)  # factorise
 
 
@@ -163,8 +163,8 @@ print("Validation and model selection (based on AUC) done.")
 
 # -------------------------------------------------------
 # Test data - Cutoff selection and Model evaluation
-    # ROC curve, AUC, accuracy, Cohen’s kappa, sensitivity, specificity and 
-    # positive predictive values (PPV), and negative predictive values (NPV)
+# ROC curve, AUC, accuracy, Cohen’s kappa, sensitivity, specificity and 
+# positive predictive values (PPV), and negative predictive values (NPV)
 
 # Make predictions on test set using the final model
 glmnet_pred_test <- predict(best_glmnet_model, newx = as.matrix(X_test), type = 'response')
